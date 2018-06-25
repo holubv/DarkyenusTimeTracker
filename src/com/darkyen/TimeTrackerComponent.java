@@ -64,7 +64,7 @@ public final class TimeTrackerComponent implements ProjectComponent, PersistentS
                 widget.setState(lastStateCache);
                 lastStateCache = null;
             }
-            statusBar.addWidget(widget);
+            statusBar.addWidget(widget, "before Position");
             this.widget = widget;
             this.widgetStatusBar = statusBar;
         }

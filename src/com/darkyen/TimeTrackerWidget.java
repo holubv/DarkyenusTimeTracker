@@ -20,7 +20,6 @@ import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.wm.CustomStatusBarWidget;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.StatusBarWidget;
-import com.intellij.ui.JBColor;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.util.concurrency.EdtExecutorService;
 import com.intellij.util.ui.EmptyIcon;
@@ -43,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 /**
  *
  */
+@SuppressWarnings("UseJBColor")
 public final class TimeTrackerWidget extends JButton implements CustomStatusBarWidget, AWTEventListener {
 
     private static final NotificationGroup NOTIFICATION_GROUP = new NotificationGroup("Darkyenus Time Tracker", NotificationDisplayType.BALLOON, false, null, EmptyIcon.ICON_0);
@@ -410,9 +410,39 @@ public final class TimeTrackerWidget extends JButton implements CustomStatusBarW
         }
     }
 
-    private static final Color COLOR_OFF = new JBColor(new Color(189, 0, 16), new Color(128, 0, 0));
-    private static final Color COLOR_ON = new JBColor(new Color(28, 152, 19), new Color(56, 113, 41));
-    private static final Color COLOR_IDLE = new JBColor(new Color(200, 164, 23), new Color(163, 112, 17));
+    private static final Color COLOR_OFF = new Color(189, 0, 16);
+    private static final Color COLOR_ON = new Color(28, 152, 19);
+    private static final Color COLOR_IDLE = new Color(200, 164, 23);
+    private static final String SAMPLE_STRING = "9999:59:59";
+
+    private static String formatDuration(long secondDuration) {
+        final Duration duration = Duration.ofSeconds(secondDuration);
+        final StringBuilder sb = new StringBuilder();
+
+        final long hours = duration.toHours();
+        final long minutes = duration.toMinutes() % 60;
+        final long seconds = duration.getSeconds() % 60;
+
+        sb.append(formatInt(hours)).append(":").append(formatInt(minutes)).append(":").append(formatInt(seconds));
+
+        return sb.toString();
+    }
+
+    private static String formatInt(long i) {
+        if (i < 10) {
+            return "0" + i;
+        }
+        return "" + i;
+    }
+
+    @Override
+    public JComponent getComponent() {
+        return this;
+    }
+
+    private static Font getWidgetFont() {
+        return JBUI.Fonts.label();
+    }
 
     @Override
     public void paintComponent(final Graphics g) {
@@ -429,72 +459,16 @@ public final class TimeTrackerWidget extends JButton implements CustomStatusBarW
         final int totalBarLength = size.width - insets.left - insets.right;
         final int barHeight = Math.max(size.height, getFont().getSize() + 2);
         final int yOffset = (size.height - barHeight) / 2;
-        final int xOffset = insets.left;
 
         g.setColor(running ? COLOR_ON : (idle ? COLOR_IDLE : COLOR_OFF));
-        g.fillRect(insets.left, insets.bottom, totalBarLength, size.height - insets.bottom - insets.top);
 
-        final Color fg = getModel().isPressed() ? UIUtil.getLabelDisabledForeground() : JBColor.foreground();
-        g.setColor(fg);
         UISettings.setupAntialiasing(g);
         g.setFont(getWidgetFont());
         final FontMetrics fontMetrics = g.getFontMetrics();
         final int infoWidth = fontMetrics.charsWidth(info.toCharArray(), 0, info.length());
         final int infoHeight = fontMetrics.getAscent();
-        g.drawString(info, xOffset + (totalBarLength - infoWidth) / 2, yOffset + infoHeight + (barHeight - infoHeight) / 2 - 1);
+        g.drawString(info, totalBarLength - infoWidth, yOffset + infoHeight);
     }
-
-    private static String formatDuration(long secondDuration) {
-        final Duration duration = Duration.ofSeconds(secondDuration);
-        final StringBuilder sb = new StringBuilder();
-
-        boolean found = false;
-        boolean secondsRelevant = true;
-        final long hours = duration.toHours();
-        if(hours != 0) {
-            found = true;
-            secondsRelevant = false;
-            sb.append(hours).append(" hr");
-            if (hours != 1) {
-                sb.append("s");
-            }
-        }
-        final long minutes = duration.toMinutes() % 60;
-        if(found || minutes != 0) {
-            if(found) {
-                sb.append(" ");
-            }
-            found = true;
-            sb.append(minutes).append(" min");/*
-            if (minutes != 1) {
-                sb.append("s");
-            }*/
-        }
-        if(secondsRelevant) {
-            final long seconds = duration.getSeconds() % 60;
-            {
-                if(found) {
-                    sb.append(" ");
-                }
-                sb.append(seconds).append(" sec");/*
-            if (seconds != 1) {
-                sb.append("s");
-            }*/
-            }
-        }
-        return sb.toString();
-    }
-
-    @Override
-    public JComponent getComponent() {
-        return this;
-    }
-
-    private static Font getWidgetFont() {
-        return JBUI.Fonts.label(11);
-    }
-
-    private static final String SAMPLE_STRING = formatDuration(999999999999L);
     @Override
     public Dimension getPreferredSize() {
         final Insets insets = getInsets();
